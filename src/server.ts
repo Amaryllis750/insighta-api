@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import profileRouter from './routes/profileRoute.js';
 import authRouter from './routes/authRoute.js';
+import cookieParser from "cookie-parser";
 
 const PORT = 4000;
 
@@ -10,6 +11,7 @@ const app = express();
 // middlwares...
 app.use(express.json());
 app.use(cors());
+app.use(cookieParser(process.env.COOKIE_SECRET));
 
 app.use('/api/profiles', profileRouter);
 app.use('/api/auth', authRouter);
