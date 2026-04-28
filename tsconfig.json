@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "module": "nodenext", // look into the package.json and see what the type is, "commonjs" or "modules" (which means esm)
+    "outDir": "dist", 
+    "resolveJsonModule": true,
+    "rootDir": "src",
+    "target": "esnext", // compile to the latest version of javascript
+    "types": ["node"],  //  types have global definitions, adding a type ("types": ["node"], makes sure that only global definitions in @types/node are made available to every file).
+    // "types": [] is like a wildcard and means that all global types from all @types/* are available to all files, which could be bad in some cases
+    "sourceMap": true, // to create js.map files to debug ts files in the console and browser
+    "declaration": true, // generates .d.ts
+    "declarationMap": true,
+
+    "noUncheckedIndexedAccess": true, // let's typescript tell you that arr[5] could be undefined
+    "exactOptionalPropertyTypes": true, // doesn't let you set optional properties to undefined if the definition doesn't allow it
+
+    "strict": true,
+    "verbatimModuleSyntax": true, // ensures type-only imports are stripped out
+    // e.g import type {UserInterface} from 'user'; This code should be stripped out when compiling to javascript
+    "isolatedModules": true, // ensures every file can be transpiled by swc or esbuild
+    "noUncheckedSideEffectImports": true,  // prevents you from importing files that don't exist
+    "moduleDetection": "force",  // treats all files like modules
+    "skipLibCheck": true, // speeds up compilation by not checking the logic in node_modules
+  },
+  "include": ["src/**/*"], 
+  "exclude": ["node_modules"]
+}
