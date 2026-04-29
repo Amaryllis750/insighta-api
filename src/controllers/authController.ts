@@ -1,16 +1,22 @@
 import * as dotenv from "dotenv";
 import type { Request, Response } from "express";
 import { generateCodeChallenge, generateRandomString } from "../util/code_generators.js";
+import { Users, type CreateUser } from "../schema/user.schema.js";
+import { getDatabase } from "../db/conn.js";
+import { eq } from "drizzle-orm";
 
 dotenv.config({ quiet: true });
+
+const createUser = async (payload: CreateUser) => {
+    const db = getDatabase();
+    const result = await db.insert(Users).values(payload).returning();
+}
 
 const githubAuth = async (req: Request, res: Response) => {
     try {
         const redirectUrl = `http://localhost:4000/api/auth/github/callback`;
         const clientId = process.env.GITHUB_CLIENT_ID;
         if(!clientId) return res.status(500).json({ "status": "error", "message": "Upstream or server error" });
-
-        console.log('I was hit');
 
         const codeVerifier = generateRandomString(50); // create code verifier of length 50
         const codeChallenge = await generateCodeChallenge(codeVerifier);
@@ -34,6 +40,15 @@ const githubAuth = async (req: Request, res: Response) => {
             sameSite: 'lax', 
             maxAge: 5 * 60 * 60
         });
+
+        res.cookie('code_state', state, {
+            httpOnly: true, 
+            secure: true, 
+            signed: true, 
+            sameSite: 'lax', 
+            maxAge: 5 * 60 * 60
+        })
+        
         res.redirect(url);
     }
     catch (err: any) {
@@ -44,61 +59,74 @@ const githubAuth = async (req: Request, res: Response) => {
 
 const githubAuthCallback = async (req: Request, res: Response) => {
     const { code } = req.query as { code: string };
+
     const clientId = process.env.GITHUB_CLIENT_ID;
     const clientSecret = process.env.GITHUB_CLIENT_SECRET;
 
     // get the code verifier
     const verifier = req.signedCookies.code_verifier as string;
+    const state = req.signedCookies.code_state as string;
     if(!verifier) return res.status(500).json({"status": "error", "message": "Upstream or server error"});
+    if(!state) return res.status(500).json({"status": "error", "message": "Upstream or server failure"});
 
-    const tokenResponse = await fetch(
+    const tokenData = await fetch(
         'https://github.com/login/oauth/access_token',
         {
             headers: {
-                Accept: 'application/json'
+                'Accept': 'application/json', 
+                'Content-Type': 'application/json'
             },
             method: 'POST',
             body: JSON.stringify({
                 client_id: clientId,
                 client_secret: clientSecret,
                 code,
-                code_verifier: verifier
+                code_verifier: verifier, 
+                state
             })
         }
-    );
+    ).then(res => res.json());
+    const accessToken = tokenData.access_token;
 
-    const responseData = await tokenResponse.json();
-    const accessToken = responseData.access_token;
 
-    const userReponse = await fetch(
+    const userData = await fetch(
         'https://api.github.com/user',
         {
             headers: {
                 Authorization: `Bearer ${accessToken}`
             }
         }
-    );
-    const userData = await userReponse.json();
+    ).then(r => r.json());
 
 
-    const emailResponse = await fetch(
+    const emailData = await fetch(
         'https://api.github.com/user/emails',
         {
             headers: {
                 Authorization: `Bearer ${accessToken}`
             }
         }
-    );
-    const emailData = await emailResponse.json();
-    console.log(emailData);
+    ).then(r=>r.json());
     const email = emailData.find((e: any) => e.primary && e.verified)?.email;
 
-    console.log(`Github user: `, {
-        name: userData.name,
-        email
-    });
+    // retrieve or create user....
+    const db = getDatabase();
 
-    res.redirect(`http://localhost:5173/home`);
+    const user = await db.select().from(Users).where(eq(Users.email, email));
+    if(!user){
+        // create user
+        const payload: CreateUser = {
+            email, 
+            github_id: userData.id as string, 
+            username: userData.name as string, 
+            avatar_url: userData.avatar_url as string, 
+            is_active: true,
+            last_login_at: new Date(),
+        };
+        await createUser(payload);
+    }
+
+    res.redirect(`http://localhost:5173/`);
 }
 
 export { githubAuth, githubAuthCallback }

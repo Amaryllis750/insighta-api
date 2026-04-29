@@ -1,11 +1,11 @@
 import type { Request, Response } from 'express';
 import type { NameMeta } from "../model/nameMeta.js"
 import { getDatabase } from '../db/conn.js';
-import { profiles } from '../schema/profile.schema.js';
+import { Profiles } from '../schema/profile.schema.js';
 import { and, asc, count, desc, eq, gt, lt } from 'drizzle-orm';
 import { getCountryData } from 'countries-list';
 import { parseSearchQuery } from '../util/parser.js';
-import {getProfileQuerySchema, searchProfileQuerySchema} from '../model/profile.validator.js';
+import { getProfileQuerySchema, searchProfileQuerySchema } from '../model/profile.validator.js';
 
 type Status = {
     status: "success" | "failure",
@@ -81,10 +81,10 @@ const createProfile = async (req: Request, res: Response) => {
         const response = result.data!;
 
         // check if the name exists in the database
-        const existing = await db.select().from(profiles).where(eq(profiles.name, name));
+        const existing = await db.select().from(Profiles).where(eq(Profiles.name, name));
         if (existing.length > 0) return res.status(200).json({ status: "success", message: "Profile already exists", data: existing[0] });
 
-        const inserted = await db.insert(profiles).values({
+        const inserted = await db.insert(Profiles).values({
             name: response.name,
             gender: response.gender as string,
             gender_probability: response.gender_probability,
@@ -106,41 +106,62 @@ const createProfile = async (req: Request, res: Response) => {
 const getAllProfiles = async (req: Request, res: Response) => {
     try {
         const query = getProfileQuerySchema.safeParse(req.query);
-        if(!query.success){
-            return res.status(400).json({status: "error", message: "Invalid query parameters"})
+        if (!query.success) {
+            return res.status(400).json({ status: "error", message: "Invalid query parameters" })
         }
 
         const { gender, country_id, age_group, min_age, max_age, min_gender_probability, min_country_probability, sort_by, order, page, limit, ...others } = query.data;
         const pageNumber = page ? page : 1;
-        const limitNumber = limit ? (limit > 0 && limit <= 50 ? limit : 10) : 10;
+        const limitNumber = limit ? (limit >= 10 && limit <= 50 ? limit : 10) : 10;
 
         const db = getDatabase();
 
         const sortColumn = sort_by === "age"
-            ? profiles.age
+            ? Profiles.age
             : sort_by === "gender_probability"
-                ? profiles.gender_probability
-                : profiles.created_at;
+                ? Profiles.gender_probability
+                : Profiles.created_at;
 
         const sortOrder = sort_by
             ? (order === "desc" ? desc(sortColumn) : asc(sortColumn))
             : undefined;
 
-        const result = await db.select().from(profiles).where(and(
-            gender ? eq(profiles.gender, gender) : undefined,
-            age_group ? eq(profiles.age_group, age_group) : undefined,
-            country_id ? eq(profiles.country_id, country_id) : undefined,
-            min_age ? gt(profiles.age, min_age) : undefined,
-            max_age ? lt(profiles.age, max_age) : undefined,
-            min_gender_probability ? gt(profiles.gender_probability, min_gender_probability) : undefined,
-            min_country_probability ? lt(profiles.country_probability, min_country_probability) : undefined
+        const result = await db.select().from(Profiles).where(and(
+            gender ? eq(Profiles.gender, gender) : undefined,
+            age_group ? eq(Profiles.age_group, age_group) : undefined,
+            country_id ? eq(Profiles.country_id, country_id) : undefined,
+            min_age ? gt(Profiles.age, min_age) : undefined,
+            max_age ? lt(Profiles.age, max_age) : undefined,
+            min_gender_probability ? gt(Profiles.gender_probability, min_gender_probability) : undefined,
+            min_country_probability ? lt(Profiles.country_probability, min_country_probability) : undefined
         )).orderBy(...(sortOrder ? [sortOrder] : []))
             .limit(limitNumber)
             .offset((pageNumber - 1) * limitNumber);
 
-        const rowCount = await db.select({ count: count() }).from(profiles);
+        const rowCount = await db.select({ count: count() }).from(Profiles).where(and(
+            gender ? eq(Profiles.gender, gender) : undefined,
+            age_group ? eq(Profiles.age_group, age_group) : undefined,
+            country_id ? eq(Profiles.country_id, country_id) : undefined,
+            min_age ? gt(Profiles.age, min_age) : undefined,
+            max_age ? lt(Profiles.age, max_age) : undefined,
+            min_gender_probability ? gt(Profiles.gender_probability, min_gender_probability) : undefined,
+            min_country_probability ? lt(Profiles.country_probability, min_country_probability) : undefined
+        ));
+        const totalPages = Math.ceil(rowCount[0]?.count! / limitNumber);
 
-        return res.status(200).json({ status: "success", page: pageNumber, limit: limitNumber, total: rowCount[0]?.count ?? 2026, data: result });
+        return res.status(200).json({
+            status: "success",
+            page: pageNumber,
+            limit: limitNumber,
+            total: rowCount[0]?.count ?? 2026,
+            data: result,
+            total_pages: totalPages,
+            links: {
+                self: `/api/profiles?page=${pageNumber}&limit=${limitNumber}`,
+                next: pageNumber == totalPages ? null : `/api/profiles?page=${pageNumber + 1}&limit=${limitNumber}`,
+                prev: pageNumber == 1 ? null : `/api/profiles?page=${pageNumber - 1}&limit=${limitNumber}`
+            }
+        });
     }
     catch (err) {
         console.log(err);
@@ -153,7 +174,7 @@ const getProfile = async (req: Request, res: Response) => {
         const { id } = req.params;
 
         const db = getDatabase();
-        const result = await db.select().from(profiles).where(eq(profiles.id, id as string));
+        const result = await db.select().from(Profiles).where(eq(Profiles.id, id as string));
 
         return res.status(200).json({ status: "success", data: result[0] });
     }
@@ -168,7 +189,7 @@ const deleteProfile = async (req: Request, res: Response) => {
         const { id } = req.params;
 
         const db = getDatabase();
-        await db.delete(profiles).where(eq(profiles.id, id as string));
+        await db.delete(Profiles).where(eq(Profiles.id, id as string));
 
         return res.sendStatus(204);
     }
@@ -181,8 +202,8 @@ const deleteProfile = async (req: Request, res: Response) => {
 const searchProfiles = async (req: Request, res: Response) => {
     try {
         const query = searchProfileQuerySchema.safeParse(req.query);
-        if(!query.success){
-            return res.status(400).json({status: "error", message: "Invalid query parameters"});
+        if (!query.success) {
+            return res.status(400).json({ status: "error", message: "Invalid query parameters" });
         }
         const { q, page, limit, ...others } = query.data;
 
@@ -192,34 +213,47 @@ const searchProfiles = async (req: Request, res: Response) => {
         const db = getDatabase();
         const parseResult = parseSearchQuery(q);
 
-        if(parseResult.noTokensFound) return res.status(400).json({status: "error", message: "Unable to interpret query"})
+        if (parseResult.noTokensFound) return res.status(400).json({ status: "error", message: "Unable to interpret query" })
 
         const filter = parseResult.filters!;
 
         const filters = [
-            filter.gender ? eq(profiles.gender, filter.gender) : undefined,
-            filter.min_age ? gt(profiles.age, filter.min_age) : undefined,
-            filter.max_age ? lt(profiles.age, filter.max_age) : undefined,
-            filter.age_group ? eq(profiles.age_group, filter.age_group) : undefined,
-            filter.country_id ? eq(profiles.country_id, filter.country_id) : undefined
+            filter.gender ? eq(Profiles.gender, filter.gender) : undefined,
+            filter.min_age ? gt(Profiles.age, filter.min_age) : undefined,
+            filter.max_age ? lt(Profiles.age, filter.max_age) : undefined,
+            filter.age_group ? eq(Profiles.age_group, filter.age_group) : undefined,
+            filter.country_id ? eq(Profiles.country_id, filter.country_id) : undefined
         ].filter(Boolean);
 
         const [totalResult] = await db
             .select({ count: count() })
-            .from(profiles)
+            .from(Profiles)
             .where(and(...filters));
 
         const totalCount = totalResult?.count;
+        const totalPages = Math.ceil(totalCount! / limitNumber);
 
         // 3. Get the Paginated Data
         const result = await db
             .select()
-            .from(profiles)
+            .from(Profiles)
             .where(and(...filters))
             .limit(limitNumber)
             .offset((pageNumber - 1) * limitNumber);
 
-        return res.status(200).json({ status: "success", page: pageNumber, limit: limitNumber, total: totalCount, data: result })
+        return res.status(200).json({
+            status: "success",
+            page: pageNumber,
+            limit: limitNumber,
+            total: totalCount!,
+            data: result,
+            total_pages: totalPages,
+            links: {
+                self: `/api/profiles/search?page=${pageNumber}&limit=${limitNumber}`,
+                next: pageNumber == totalPages ? null : `/api/profiles/search?page=${pageNumber + 1}&limit=${limitNumber}`,
+                prev: pageNumber == 1 ? null : `/api/profiles/search?page=${pageNumber - 1}&limit=${limitNumber}`
+            }
+        })
     }
     catch (err) {
         console.log(err);

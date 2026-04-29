@@ -1,6 +1,6 @@
-import {pgTable, uuid, integer, text, real, date} from 'drizzle-orm/pg-core';
+import {pgTable, uuid, integer, text, real, date, timestamp} from 'drizzle-orm/pg-core';
 
-const profiles = pgTable("profiles", {
+const Profiles = pgTable("profiles", {
     id: uuid("id").primaryKey().defaultRandom(), 
     name: text("name").unique().notNull(), 
     gender: text("gender").notNull(), 
@@ -10,7 +10,7 @@ const profiles = pgTable("profiles", {
     country_id: text("country_id").notNull(), 
     country_probability: real("country_probability").notNull(),
     country_name: text("country_name").notNull(),
-    created_at: date("created_at").notNull().defaultNow()
+    created_at: timestamp("created_at", {withTimezone: true}).notNull().defaultNow()
 });
 
-export {profiles};
+export {Profiles};
