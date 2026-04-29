@@ -4,6 +4,7 @@ import profileRouter from './routes/profileRoute.js';
 import authRouter from './routes/authRoute.js';
 import cookieParser from "cookie-parser";
 import { verifyHeaders } from './middlewares/profile.middleware.js';
+import rateLimiter from './middlewares/rateLimiter.middleware.js';
 
 const PORT = 4000;
 
@@ -13,6 +14,7 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 app.use(cookieParser(process.env.COOKIE_SECRET));
+app.use(rateLimiter);
 
 app.use('/api/profiles', verifyHeaders, profileRouter);
 app.use('/api/auth', authRouter);
