@@ -1,13 +1,14 @@
 import { countries } from 'countries-list';
 
-const COUNTRY_NAME_TO_CODE = Object.entries(countries).reduce((acc: Record<string, string>, [code, data]) => {
+const COUNTRY_NAME_TO_CODE = Object.entries(countries).reduce(
+  (acc: Record<string, string>, [code, data]) => {
     acc[data.name.toLowerCase()] = code;
     return acc;
-}, {});
+  },
+  {},
+);
 
-
-const MULTI_WORD_COUNTRIES = Object.keys(COUNTRY_NAME_TO_CODE)
-  .filter(name => name.includes(' '));
+const MULTI_WORD_COUNTRIES = Object.keys(COUNTRY_NAME_TO_CODE).filter((name) => name.includes(' '));
 
 function matchMultiWord(query: string) {
   const lowerQuery = query.toLowerCase();
@@ -16,7 +17,6 @@ function matchMultiWord(query: string) {
   }
   return null;
 }
-
 
 function matchSingleWord(tokens: string[]) {
   for (const token of tokens) {
