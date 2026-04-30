@@ -10,6 +10,7 @@ const config: Config = {
     "!src/**/*.test.ts",
     "!src/**/__tests__/**",
   ],
+  extensionsToTreatAsEsm: [".ts"],
   coverageThreshold: {
     global: {
       lines: 70,

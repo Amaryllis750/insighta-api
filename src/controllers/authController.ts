@@ -119,7 +119,7 @@ const githubAuthCallback = async (req: Request, res: Response) => {
             is_active: true,
             last_login_at: new Date(),
         };
-        // await createUser(payload);
+        console.log(payload);
     }
 
     res.redirect(`http://localhost:5173/`);
