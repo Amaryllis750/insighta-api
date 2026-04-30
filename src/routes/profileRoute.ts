@@ -1,5 +1,11 @@
-import { Router } from "express";
-import { createProfile, getProfile, deleteProfile, getAllProfiles, searchProfiles } from "../controllers/profileController.js";
+import { Router } from 'express';
+import {
+  createProfile,
+  getProfile,
+  deleteProfile,
+  getAllProfiles,
+  searchProfiles,
+} from '../controllers/profileController.js';
 
 const router = Router();
 
@@ -9,4 +15,4 @@ router.get('/:id', getProfile);
 router.get('/', getAllProfiles);
 router.delete('/:id', deleteProfile);
 
-export default router;  
+export default router;
