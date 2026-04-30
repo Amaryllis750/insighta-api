@@ -9,7 +9,7 @@
     "dev": "node --watch --import=tsx src/server.ts",
     "seed": "node --watch --import=tsx src/db/seed.ts",
     "lint": "eslint . --ext .ts",
-    "format:check": "prettier --check .",
+    "format:check": "prettier --check --write .",
     "test": "jest --passWithNoTests"
   },
   "keywords": [],

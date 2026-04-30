@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import profileRouter from './routes/profileRoute.js';
 import authRouter from './routes/authRoute.js';
-import cookieParser from "cookie-parser";
+import cookieParser from 'cookie-parser';
 import { verifyHeaders } from './middlewares/profile.middleware.js';
 
 const PORT = 4000;
@@ -17,4 +17,4 @@ app.use(cookieParser(process.env.COOKIE_SECRET));
 app.use('/api/profiles', verifyHeaders, profileRouter);
 app.use('/api/auth', authRouter);
 
-app.listen(PORT, () => (console.log(`Server is listening at port ${PORT}...`)));
+app.listen(PORT, () => console.log(`Server is listening at port ${PORT}...`));
