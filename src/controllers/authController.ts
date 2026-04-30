@@ -7,10 +7,6 @@ import { eq } from "drizzle-orm";
 
 dotenv.config({ quiet: true });
 
-const createUser = async (payload: CreateUser) => {
-    const db = getDatabase();
-    // const result = await db.insert(Users).values(payload).returning();
-}
 
 const githubAuth = async (req: Request, res: Response) => {
     try {
@@ -123,7 +119,7 @@ const githubAuthCallback = async (req: Request, res: Response) => {
             is_active: true,
             last_login_at: new Date(),
         };
-        await createUser(payload);
+        // await createUser(payload);
     }
 
     res.redirect(`http://localhost:5173/`);

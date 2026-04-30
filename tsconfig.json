@@ -23,5 +23,5 @@
     "skipLibCheck": true, // speeds up compilation by not checking the logic in node_modules
   },
   "include": ["src/**/*"], 
-  "exclude": ["node_modules", "jest.config.ts"]
+  "exclude": ["node_modules"]
 }
