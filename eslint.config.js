@@ -1,12 +1,11 @@
 import js from '@eslint/js';
 import tsPlugin from '@typescript-eslint/eslint-plugin';
 import tsParser from '@typescript-eslint/parser';
-import prettierConfig from 'eslint-config-prettier';
 import globals from 'globals';
 
 export default [
   {
-    ignores: ['jest.config.ts'],
+    ignores: ['jest.config.ts', 'dist'],
   },
   js.configs.recommended,
   {
@@ -42,6 +41,4 @@ export default [
       '@typescript-eslint/no-explicit-any': 'off',
     },
   },
-  // Must be last — disables rules that conflict with Prettier
-  prettierConfig,
 ];
