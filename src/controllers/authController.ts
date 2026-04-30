@@ -9,7 +9,7 @@ dotenv.config({ quiet: true });
 
 const createUser = async (payload: CreateUser) => {
     const db = getDatabase();
-    const result = await db.insert(Users).values(payload).returning();
+    // const result = await db.insert(Users).values(payload).returning();
 }
 
 const githubAuth = async (req: Request, res: Response) => {
@@ -52,7 +52,7 @@ const githubAuth = async (req: Request, res: Response) => {
         res.redirect(url);
     }
     catch (err: any) {
-        console.log(err.message);
+        console.error(err.message);
         return res.status(500).json({ "status": "error", "message": "Upstream or server error" });
     }
 };

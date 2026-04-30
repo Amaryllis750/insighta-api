@@ -98,7 +98,7 @@ const createProfile = async (req: Request, res: Response) => {
         return res.status(201).json({ status: "success", data: inserted[0] });
     }
     catch (err) {
-        console.log(err);
+        console.error(err);
         return res.status(500).json({ status: "error", message: "Upstream or server failure" });
     }
 }
@@ -110,7 +110,7 @@ const getAllProfiles = async (req: Request, res: Response) => {
             return res.status(400).json({ status: "error", message: "Invalid query parameters" })
         }
 
-        const { gender, country_id, age_group, min_age, max_age, min_gender_probability, min_country_probability, sort_by, order, page, limit, ...others } = query.data;
+        const { gender, country_id, age_group, min_age, max_age, min_gender_probability, min_country_probability, sort_by, order, page, limit } = query.data;
         const pageNumber = page ? page : 1;
         const limitNumber = limit ? (limit >= 10 && limit <= 50 ? limit : 10) : 10;
 
@@ -147,7 +147,7 @@ const getAllProfiles = async (req: Request, res: Response) => {
             min_gender_probability ? gt(Profiles.gender_probability, min_gender_probability) : undefined,
             min_country_probability ? lt(Profiles.country_probability, min_country_probability) : undefined
         ));
-        const totalPages = Math.ceil(rowCount[0]?.count! / limitNumber);
+        const totalPages = Math.ceil((rowCount[0]?.count ?? 2026) / limitNumber);
 
         return res.status(200).json({
             status: "success",
@@ -164,7 +164,7 @@ const getAllProfiles = async (req: Request, res: Response) => {
         });
     }
     catch (err) {
-        console.log(err);
+        console.error(err);
         return res.status(500).json({ status: "error", message: "Upstream or server failure" });
     }
 }
@@ -179,7 +179,7 @@ const getProfile = async (req: Request, res: Response) => {
         return res.status(200).json({ status: "success", data: result[0] });
     }
     catch (err) {
-        console.log(err);
+        console.error(err);
         return res.status(500).json({ status: "error", message: "Upstream or server failure" });
     }
 }
@@ -194,7 +194,7 @@ const deleteProfile = async (req: Request, res: Response) => {
         return res.sendStatus(204);
     }
     catch (err) {
-        console.log(err);
+        console.error(err);
         return res.status(500).json({ status: "error", message: "Upstream or server failure" });
     }
 }
@@ -205,7 +205,7 @@ const searchProfiles = async (req: Request, res: Response) => {
         if (!query.success) {
             return res.status(400).json({ status: "error", message: "Invalid query parameters" });
         }
-        const { q, page, limit, ...others } = query.data;
+        const { q, page, limit } = query.data;
 
         const pageNumber = page ? page : 1;
         const limitNumber = limit ? (limit > 0 && limit <= 50 ? limit : 10) : 10;
@@ -256,7 +256,7 @@ const searchProfiles = async (req: Request, res: Response) => {
         })
     }
     catch (err) {
-        console.log(err);
+        console.error(err);
         return res.status(500).json({ status: "error", message: "Server failure" })
     }
 
