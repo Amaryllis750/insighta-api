@@ -18,7 +18,7 @@ const logging = (req: Request, res: Response, next: NextFunction) => {
         const elapsedTime = process.hrtime(startTime);
         const elapsedTimeInMs = elapsedTime[0] * 1000 + elapsedTime[1] / 1e6;
 
-        const message = `${new Date().toISOString()} ${method} ${path} ${res.statusCode} ${elapsedTimeInMs}`;
+        const message = `${method} ${path} ${res.statusCode} ${elapsedTimeInMs}ms`;
         logger.info(message);
     });
 
