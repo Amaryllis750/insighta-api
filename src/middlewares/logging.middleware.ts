@@ -4,7 +4,6 @@ import winston from 'winston';
 const logger = winston.createLogger({
     format: winston.format.simple(),
     transports: [
-        new winston.transports.Console(), 
         new winston.transports.File({filename: 'request.log'})
     ]
 });
@@ -12,6 +11,7 @@ const logger = winston.createLogger({
 const logging = (req: Request, res: Response, next: NextFunction) => {
     const method = req.method;
     const path = req.path;
+    console.log(req.query);
     const startTime = process.hrtime();
 
     res.on('finish', () => {

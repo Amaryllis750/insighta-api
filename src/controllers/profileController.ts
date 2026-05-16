@@ -135,6 +135,7 @@ const getAllProfiles = async (req: Request, res: Response) => {
       page,
       limit,
     } = query.data;
+    console.log(`gender is ${gender}`)
     const pageNumber = page ? page : 1;
     const limitNumber = limit ? (limit >= 10 && limit <= 50 ? limit : 10) : 10;
 
@@ -264,11 +265,11 @@ const searchProfiles = async (req: Request, res: Response) => {
     const filter = parseResult.filters!;
 
     const filters = [
-      filter.gender ? eq(Profiles.gender, filter.gender) : undefined,
-      filter.min_age ? gt(Profiles.age, filter.min_age) : undefined,
-      filter.max_age ? lt(Profiles.age, filter.max_age) : undefined,
-      filter.age_group ? eq(Profiles.age_group, filter.age_group) : undefined,
-      filter.country_id ? eq(Profiles.country_id, filter.country_id) : undefined,
+      filter?.gender ? eq(Profiles.gender, filter.gender) : undefined,
+      filter?.min_age ? gt(Profiles.age, filter.min_age) : undefined,
+      filter?.max_age ? lt(Profiles.age, filter.max_age) : undefined,
+      filter?.age_group ? eq(Profiles.age_group, filter.age_group) : undefined,
+      filter?.country_id ? eq(Profiles.country_id, filter.country_id) : undefined,
     ].filter(Boolean);
 
     const [totalResult] = await db
