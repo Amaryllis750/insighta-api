@@ -2,8 +2,9 @@ import { extractAge } from './age_functions.js';
 import { extractGender } from './gender_functions.js';
 import { extractCountry } from './country_function.js';
 
-export function parseSearchQuery(query: string) {
-  if (!query?.trim()) return {};
+export function parseSearchQuery(query?: string) {
+  if(!query) return {};
+  if (!query?.trim()) return {filters: {}};
 
   const normalized = query.trim().toLowerCase();
   const tokens = normalized.split(/[\s,]+/).filter(Boolean);

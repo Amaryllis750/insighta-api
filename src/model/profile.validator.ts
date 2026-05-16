@@ -17,7 +17,7 @@ const getProfileQuerySchema = z
   .strict();
 
 const searchProfileQuerySchema = z.object({
-  q: z.string().toLowerCase(),
+  q: z.string().toLowerCase().optional(),
   page: z.coerce.number().optional(),
   limit: z.coerce.number().optional(),
 });
