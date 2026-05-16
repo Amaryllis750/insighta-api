@@ -1,5 +1,5 @@
 import type { NextFunction, Request, Response } from "express";
-import jwt, { type JwtPayload, type VerifyErrors } from "jsonwebtoken";
+import jwt from "jsonwebtoken";
 
 const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -10,7 +10,7 @@ const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
         if (!accessToken || !refreshToken) return res.status(401).json({ "status": "error", "message": "Unauthorized. Missing refresh token and access token" });
 
         try {
-            const decoded = jwt.verify(accessToken, process.env.ACCESS_TOKEN_SECRET!);
+            jwt.verify(accessToken, process.env.ACCESS_TOKEN_SECRET!);
             return next();
         }
         catch (e: any) {

@@ -176,7 +176,7 @@ const refresh = async (req: Request, res: Response) => {
     if (result && result[0]?.refresh_token !== refreshToken) res.status(400).json({status: "error", message: "Refresh Token already rotated"});
 
     // decode the refresh token, if the token is invalid or expired, it will throw and error and the user will be logged out
-    const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET!);
+    jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET!);
   
 
     // create new refresh tokens and access tokens
