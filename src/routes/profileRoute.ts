@@ -5,7 +5,7 @@ import {
   deleteProfile,
   getAllProfiles,
   searchProfiles,
-  exportPRofiles
+  exportProfiles
 } from '../controllers/profileController.js';
 
 const router = Router();
