@@ -11,6 +11,7 @@ const getProfileQuerySchema = z
     min_country_probability: z.coerce.number().optional(),
     sort_by: z.enum(['age', 'created_at', 'gender_probability']).optional(),
     order: z.enum(['asc', 'desc']).optional(),
+    format: z.enum(['csv']).optional(),
     page: z.coerce.number().optional(),
     limit: z.coerce.number().optional(),
   })

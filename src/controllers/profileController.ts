@@ -1,16 +1,19 @@
-import type { Request, Response } from 'express';
-import type { NameMeta } from '../model/nameMeta.js';
-import { getDatabase } from '../db/conn.js';
-import { Profiles } from '../schema/profile.schema.js';
-import { and, asc, count, desc, eq, gt, lt } from 'drizzle-orm';
-import { getCountryData } from 'countries-list';
-import { parseSearchQuery } from '../util/parser.js';
-import { getProfileQuerySchema, searchProfileQuerySchema } from '../model/profile.validator.js';
+import type { Request, Response } from "express";
+import type { NameMeta } from "../model/nameMeta.js";
+import { getDatabase } from "../db/conn.js";
+import { Profiles } from "../schema/profile.schema.js";
+import { and, asc, count, desc, eq, gt, lt } from "drizzle-orm";
+import { getCountryData } from "countries-list";
+import { parseSearchQuery } from "../util/parser.js";
+import {
+  getProfileQuerySchema,
+  searchProfileQuerySchema,
+} from "../model/profile.validator.js";
 
 type Status = {
-  status: 'success' | 'failure';
+  status: "success" | "failure";
   data?: NameMeta;
-  errorApi?: 'Genderize' | 'Agify' | 'Nationalize';
+  errorApi?: "Genderize" | "Agify" | "Nationalize";
 };
 
 type Country = {
@@ -18,34 +21,40 @@ type Country = {
   probability: number;
 };
 
-const classifyAge = (age: number): 'child' | 'teenager' | 'adult' | 'senior' | 'invalid' => {
-  if (age >= 0 && age <= 12) return 'child';
-  if (age > 12 && age <= 19) return 'teenager';
-  if (age > 19 && age <= 59) return 'adult';
-  if (age > 60) return 'senior';
-  else return 'invalid'; // when the age is less than 0
+const classifyAge = (
+  age: number,
+): "child" | "teenager" | "adult" | "senior" | "invalid" => {
+  if (age >= 0 && age <= 12) return "child";
+  if (age > 12 && age <= 19) return "teenager";
+  if (age > 19 && age <= 59) return "adult";
+  if (age > 60) return "senior";
+  else return "invalid"; // when the age is less than 0
 };
 
 const getNameMetaInformation = async (name: string): Promise<Status> => {
   const genderResponse = await fetch(`https://api.genderize.io?name=${name}`);
   const genderData = await genderResponse.json();
   if (!genderData.gender || genderData.count == 0) {
-    return { status: 'failure', errorApi: 'Genderize' };
+    return { status: "failure", errorApi: "Genderize" };
   }
 
   const ageResponse = await fetch(`https://api.agify.io?name=${name}`);
   const ageData = await ageResponse.json();
 
-  if (!ageData.age) return { status: 'failure', errorApi: 'Agify' };
+  if (!ageData.age) return { status: "failure", errorApi: "Agify" };
   const ageGroup = classifyAge(Number(ageData.age));
-  if (ageGroup == 'invalid') return { status: 'failure', errorApi: 'Agify' };
+  if (ageGroup == "invalid") return { status: "failure", errorApi: "Agify" };
 
-  const nationalityResponse = await fetch(`https://api.nationalize.io?name=${name}`);
+  const nationalityResponse = await fetch(
+    `https://api.nationalize.io?name=${name}`,
+  );
   const nationalityData = await nationalityResponse.json();
-  if (!nationalityData.country) return { status: 'failure', errorApi: 'Nationalize' };
+  if (!nationalityData.country)
+    return { status: "failure", errorApi: "Nationalize" };
   // get the country with the highest probability
-  const country = nationalityData.country.reduce((acc: Country, current: Country) =>
-    current.probability > acc.probability ? current : acc,
+  const country = nationalityData.country.reduce(
+    (acc: Country, current: Country) =>
+      current.probability > acc.probability ? current : acc,
   );
   const countryName = getCountryData(country.country_id).name;
 
@@ -61,7 +70,7 @@ const getNameMetaInformation = async (name: string): Promise<Status> => {
     country_probability: country.probability,
   };
 
-  return { status: 'success', data };
+  return { status: "success", data };
 };
 
 const createProfile = async (req: Request, res: Response) => {
@@ -72,27 +81,39 @@ const createProfile = async (req: Request, res: Response) => {
     let name = req.body.name;
 
     if (!name)
-      return res.status(400).json({ status: 'error', message: 'Missing name or bad name' });
-    if (typeof name !== 'string')
-      return res.status(400).json({ status: 'error', message: 'Name should be a string' });
+      return res
+        .status(400)
+        .json({ status: "error", message: "Missing name or bad name" });
+    if (typeof name !== "string")
+      return res
+        .status(400)
+        .json({ status: "error", message: "Name should be a string" });
     if (!nameRegex.test(name))
-      return res.status(422).json({ status: 'error', message: 'Unprocessable entity' });
+      return res
+        .status(422)
+        .json({ status: "error", message: "Unprocessable entity" });
 
     name = name.toLowerCase();
     const result = await getNameMetaInformation(name);
-    if (result.status === 'failure') {
-      return res
-        .status(502)
-        .json({ status: 'error', message: `${!result.errorApi} returned an invalid response` });
+    if (result.status === "failure") {
+      return res.status(502).json({
+        status: "error",
+        message: `${!result.errorApi} returned an invalid response`,
+      });
     }
     const response = result.data!;
 
     // check if the name exists in the database
-    const existing = await db.select().from(Profiles).where(eq(Profiles.name, name));
+    const existing = await db
+      .select()
+      .from(Profiles)
+      .where(eq(Profiles.name, name));
     if (existing.length > 0)
-      return res
-        .status(200)
-        .json({ status: 'success', message: 'Profile already exists', data: existing[0] });
+      return res.status(200).json({
+        status: "success",
+        message: "Profile already exists",
+        data: existing[0],
+      });
 
     const inserted = await db
       .insert(Profiles)
@@ -108,10 +129,12 @@ const createProfile = async (req: Request, res: Response) => {
       })
       .returning();
 
-    return res.status(201).json({ status: 'success', data: inserted[0] });
+    return res.status(201).json({ status: "success", data: inserted[0] });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ status: 'error', message: 'Upstream or server failure' });
+    return res
+      .status(500)
+      .json({ status: "error", message: "Upstream or server failure" });
   }
 };
 
@@ -119,7 +142,9 @@ const getAllProfiles = async (req: Request, res: Response) => {
   try {
     const query = getProfileQuerySchema.safeParse(req.query);
     if (!query.success) {
-      return res.status(400).json({ status: 'error', message: 'Invalid query parameters' });
+      return res
+        .status(400)
+        .json({ status: "error", message: "Invalid query parameters" });
     }
 
     const {
@@ -135,20 +160,24 @@ const getAllProfiles = async (req: Request, res: Response) => {
       page,
       limit,
     } = query.data;
-    console.log(`gender is ${gender}`)
+    console.log(`gender is ${gender}`);
     const pageNumber = page ? page : 1;
     const limitNumber = limit ? (limit >= 10 && limit <= 50 ? limit : 10) : 10;
 
     const db = getDatabase();
 
     const sortColumn =
-      sort_by === 'age'
+      sort_by === "age"
         ? Profiles.age
-        : sort_by === 'gender_probability'
+        : sort_by === "gender_probability"
           ? Profiles.gender_probability
           : Profiles.created_at;
 
-    const sortOrder = sort_by ? (order === 'desc' ? desc(sortColumn) : asc(sortColumn)) : undefined;
+    const sortOrder = sort_by
+      ? order === "desc"
+        ? desc(sortColumn)
+        : asc(sortColumn)
+      : undefined;
 
     const result = await db
       .select()
@@ -193,7 +222,7 @@ const getAllProfiles = async (req: Request, res: Response) => {
     const totalPages = Math.ceil((rowCount[0]?.count ?? 2026) / limitNumber);
 
     return res.status(200).json({
-      status: 'success',
+      status: "success",
       page: pageNumber,
       limit: limitNumber,
       total: rowCount[0]?.count ?? 2026,
@@ -205,12 +234,17 @@ const getAllProfiles = async (req: Request, res: Response) => {
           pageNumber == totalPages
             ? null
             : `/api/profiles?page=${pageNumber + 1}&limit=${limitNumber}`,
-        prev: pageNumber == 1 ? null : `/api/profiles?page=${pageNumber - 1}&limit=${limitNumber}`,
+        prev:
+          pageNumber == 1
+            ? null
+            : `/api/profiles?page=${pageNumber - 1}&limit=${limitNumber}`,
       },
     });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ status: 'error', message: 'Upstream or server failure' });
+    return res
+      .status(500)
+      .json({ status: "error", message: "Upstream or server failure" });
   }
 };
 
@@ -224,10 +258,12 @@ const getProfile = async (req: Request, res: Response) => {
       .from(Profiles)
       .where(eq(Profiles.id, id as string));
 
-    return res.status(200).json({ status: 'success', data: result[0] });
+    return res.status(200).json({ status: "success", data: result[0] });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ status: 'error', message: 'Upstream or server failure' });
+    return res
+      .status(500)
+      .json({ status: "error", message: "Upstream or server failure" });
   }
 };
 
@@ -241,7 +277,9 @@ const deleteProfile = async (req: Request, res: Response) => {
     return res.sendStatus(204);
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ status: 'error', message: 'Upstream or server failure' });
+    return res
+      .status(500)
+      .json({ status: "error", message: "Upstream or server failure" });
   }
 };
 
@@ -249,7 +287,9 @@ const searchProfiles = async (req: Request, res: Response) => {
   try {
     const query = searchProfileQuerySchema.safeParse(req.query);
     if (!query.success) {
-      return res.status(400).json({ status: 'error', message: 'Invalid query parameters' });
+      return res
+        .status(400)
+        .json({ status: "error", message: "Invalid query parameters" });
     }
     const { q, page, limit } = query.data;
 
@@ -260,7 +300,9 @@ const searchProfiles = async (req: Request, res: Response) => {
     const parseResult = parseSearchQuery(q);
 
     if (parseResult.noTokensFound)
-      return res.status(400).json({ status: 'error', message: 'Unable to interpret query' });
+      return res
+        .status(400)
+        .json({ status: "error", message: "Unable to interpret query" });
 
     const filter = parseResult.filters!;
 
@@ -269,7 +311,9 @@ const searchProfiles = async (req: Request, res: Response) => {
       filter?.min_age ? gt(Profiles.age, filter.min_age) : undefined,
       filter?.max_age ? lt(Profiles.age, filter.max_age) : undefined,
       filter?.age_group ? eq(Profiles.age_group, filter.age_group) : undefined,
-      filter?.country_id ? eq(Profiles.country_id, filter.country_id) : undefined,
+      filter?.country_id
+        ? eq(Profiles.country_id, filter.country_id)
+        : undefined,
     ].filter(Boolean);
 
     const [totalResult] = await db
@@ -289,7 +333,7 @@ const searchProfiles = async (req: Request, res: Response) => {
       .offset((pageNumber - 1) * limitNumber);
 
     return res.status(200).json({
-      status: 'success',
+      status: "success",
       page: pageNumber,
       limit: limitNumber,
       total: totalCount!,
@@ -309,8 +353,82 @@ const searchProfiles = async (req: Request, res: Response) => {
     });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ status: 'error', message: 'Server failure' });
+    return res.status(500).json({ status: "error", message: "Server failure" });
   }
 };
 
-export { createProfile, getProfile, deleteProfile, getAllProfiles, searchProfiles };
+const exportProfiles = async (req: Request, res: Response) => {
+  const query = getProfileQuerySchema.safeParse(req.query);
+
+  if (!query.success) {
+    return res
+      .status(400)
+      .json({ status: "error", message: "Invalid query parameters" });
+  }
+
+  const {
+    gender,
+    country_id,
+    age_group,
+    min_age,
+    max_age,
+    min_gender_probability,
+    min_country_probability,
+    sort_by,
+    order,
+    format,
+  } = query.data;
+
+  if (!format)
+    return res
+      .status(400)
+      .json({ status: "error", message: "format is not defined" });
+
+  const sortColumn =
+    sort_by === "age"
+      ? Profiles.age
+      : sort_by === "gender_probability"
+        ? Profiles.gender_probability
+        : Profiles.created_at;
+
+  const sortOrder = sort_by
+    ? order === "desc"
+      ? desc(sortColumn)
+      : asc(sortColumn)
+    : undefined;
+
+  const db = getDatabase();
+
+  const result = await db
+    .select()
+    .from(Profiles)
+    .where(
+      and(
+        gender ? eq(Profiles.gender, gender) : undefined,
+        age_group ? eq(Profiles.age_group, age_group) : undefined,
+        country_id ? eq(Profiles.country_id, country_id) : undefined,
+        min_age ? gt(Profiles.age, min_age) : undefined,
+        max_age ? lt(Profiles.age, max_age) : undefined,
+        min_gender_probability
+          ? gt(Profiles.gender_probability, min_gender_probability)
+          : undefined,
+        min_country_probability
+          ? lt(Profiles.country_probability, min_country_probability)
+          : undefined,
+      ),
+    )
+    .orderBy(...(sortOrder ? [sortOrder] : []));
+
+  const fileBlob = new Blob([...(result.map(profile => `${profile.id},${profile.name},${profile.gender},${profile.gender_probability},${profile.age},${profile.age_group},${profile.country_id},${profile.country_name},${profile.country_probability},${profile.created_at}\n`))]);
+
+  // return the blob
+  };
+
+export {
+  createProfile,
+  getProfile,
+  deleteProfile,
+  getAllProfiles,
+  searchProfiles,
+  exportProfiles,
+};
