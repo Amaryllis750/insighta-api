@@ -419,10 +419,17 @@ const exportProfiles = async (req: Request, res: Response) => {
     )
     .orderBy(...(sortOrder ? [sortOrder] : []));
 
-  const fileBlob = new Blob([...(result.map(profile => `${profile.id},${profile.name},${profile.gender},${profile.gender_probability},${profile.age},${profile.age_group},${profile.country_id},${profile.country_name},${profile.country_probability},${profile.created_at}\n`))]);
+  const csv = result
+    .map(
+      (profile) =>
+        `${profile.id},${profile.name},${profile.gender},${profile.gender_probability},${profile.age},${profile.age_group},${profile.country_id},${profile.country_name},${profile.country_probability},${profile.created_at}\n`,
+    )
+    .join("");
 
-  // return the blob
-  };
+  res.setHeader("Content-Type", "text/csv");
+  res.setHeader("Content-Disposition", 'attachment; filename="profiles.csv"');
+  return res.send(csv);
+};
 
 export {
   createProfile,
